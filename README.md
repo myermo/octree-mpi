@@ -61,7 +61,6 @@ An executable main is created in the same directory
 
 In the project directory, just execute
   ```bash
-  mkdir build && cd build
   cmake -B build -DCMAKE_BUILD_TYPE=Release ..
   make
   ```
