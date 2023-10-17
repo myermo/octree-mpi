@@ -1,0 +1,3 @@
+/home/miguelyermo/Material/TFG/t-basteiro/build/CMakeFiles/rule-based-classifier-cpp.dir
+/home/miguelyermo/Material/TFG/t-basteiro/build/CMakeFiles/edit_cache.dir
+/home/miguelyermo/Material/TFG/t-basteiro/build/CMakeFiles/rebuild_cache.dir

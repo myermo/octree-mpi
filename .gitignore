@@ -1,0 +1,14 @@
+cmake-build-debug/
+cmake-build-release/
+cmake-build-*/
+out/
+obj/
+.idea/
+.gradle/
+playground/
+data/
+scripts/
+main
+sandbox.cpp
+lib/*
+Release
