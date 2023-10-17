@@ -6,7 +6,6 @@ obj/
 .idea/
 .gradle/
 playground/
-data/
 scripts/
 main
 sandbox.cpp
