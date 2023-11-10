@@ -8,6 +8,28 @@
 
 namespace fs = std::filesystem;
 
+double density(const Octree* gOctree, double radius, const std::vector<Lpoint>* points)
+{
+    unsigned long tot_neigh = 0;
+
+    for (Lpoint point : *points) {
+        tot_neigh += gOctree->searchNeighbors3D(point, radius).size();
+    }
+
+    return tot_neigh/(double)points->size();
+}
+
+double density_2(const Octree* gOctree, double radius, const std::vector<Lpoint>* points)
+{
+    unsigned long tot_neigh = 0;
+
+    for (Lpoint point : *points) {
+        tot_neigh += gOctree->numNeighbors(&point, radius);  // nesta funcion da erro
+    }
+
+    return tot_neigh/(double)points->size();
+}
+
 int main(int argc, char* argv[])
 {
 	setDefaults();
@@ -39,6 +61,18 @@ int main(int argc, char* argv[])
 	Octree gOctree(points);
 	tw.stop();
 	std::cout << "Time to build global octree: " << tw.getElapsedDecimalSeconds() << " seconds\n";
+
+    tw.start();
+    double dense = density(&gOctree, 1, &points);
+    tw.stop();
+    std::cout << "density with a 1m radius: " << dense << std::endl;
+	std::cout << "Time to get density: " << tw.getElapsedDecimalSeconds() << " seconds\n";
+
+    tw.start();
+    dense = density_2(&gOctree, 1, &points);
+    tw.stop();
+    std::cout << "density with a 1m radius: " << dense << std::endl;
+	std::cout << "Time to get density: " << tw.getElapsedDecimalSeconds() << " seconds\n";
 
 	return EXIT_SUCCESS;
 }
