@@ -5,6 +5,7 @@
 #include <iomanip>
 #include <iostream>
 #include "TimeWatcher.hpp"
+#include "ParaTree.hpp"
 
 namespace fs = std::filesystem;
 
@@ -39,6 +40,12 @@ int main(int argc, char* argv[])
 	Octree gOctree(points);
 	tw.stop();
 	std::cout << "Time to build global octree: " << tw.getElapsedDecimalSeconds() << " seconds\n";
+
+    tw.start();
+    // bitpit::ParaTree pt(mainOptions.inputFile); // constructor, check if this is correct
+    bitpit::ParaTree pt;
+    tw.stop();
+    std::cout << "Length of octree: " << pt.getL() << "\n";
 
 	return EXIT_SUCCESS;
 }

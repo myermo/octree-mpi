@@ -32,12 +32,16 @@ LASLIB_INC = $(LIBDIR)/LAStools/LASlib/inc
 LASZIP_INC = $(LIBDIR)/LAStools/LASzip/src
 EIGEN_INC = /usr/include/eigen3
 SHP_INC = $(LIBDIR)/shapelib-1.5.0
+# BITPITDIR = $(LIBDIR)/bitpit/src $(LIBDIR)/bitpit/build/src
+# BITPIT_INC = $(shell find -L $(BITPITDIR) -regex '.*\.hp*' -printf "%h\n" | sort -u)
+# BITPIT_INC = /usr/local/include/bitpit
+# BITPIT_INC = $(LIBDIR)/bitpit/build/src $(LIBDIR)/bitpit/src
 
 ##########################
 ### Automagically include all directories under SRCDIR or INCDIR where a .h[pp] exists. ###
 ##########################
 INC_DIRS := $(shell find -L $(SRCDIR) $(INCDIR) -regex '.*\.hp*' -printf "%h\n" | sort -u)
-INC_DIRS += $(LASLIB_INC) $(LASZIP_INC) $(EIGEN_INC) $(SHP_INC)
+INC_DIRS += $(LASLIB_INC) $(LASZIP_INC) $(EIGEN_INC) $(SHP_INC) # $(BITPIT_INC)
 INC_FLAGS := $(foreach d, $(INC_DIRS), -I$d)
 
 ##########################
@@ -45,7 +49,9 @@ INC_FLAGS := $(foreach d, $(INC_DIRS), -I$d)
 ##########################
 LASLIB_LIB = $(LIBDIR)/LAStools/LASlib/lib
 SHP_LIB = $(LIBDIR)/shapelib-1.5.0
-LIBRARY_DIRS = $(LASLIB_LIB) $(SHP_LIB)
+# BITPIT_LIB = $(LIBDIR)/bitpit/build
+# BITPIT_LIB = /usr/local/include/bitpit
+LIBRARY_DIRS = $(LASLIB_LIB) $(SHP_LIB) # $(BITPIT_LIB)
 LIB = $(foreach d, $(LIBRARY_DIRS), -L$d)
 
 LIB_SEARCH_PATH := $(foreach d, $(LIBRARY_DIRS), -Wl,-R$d)
