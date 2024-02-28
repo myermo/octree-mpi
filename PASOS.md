@@ -6,30 +6,23 @@ wget https://github.com/optimad/bitpit/archive/bitpit-1.9.0.zip && unzip bitpit-
 mv lib/bitpit-bitpit-1.9.0 lib/bitpit && cd lib/bitpit && mkdir build && cd build && ccmake ..
 ```
 
-De dependencias, eu tiven que instalar as que indica en INSTALL.md e, a maiores, PETSc. Hai algunhas que son só para módulos específicos que en principio non imos usar, pero ó intentar instalar só o módulo PABLO (máis aqueles dos que depende) o ccmake mostraba outros erros diferentes.
+De dependencias, eu tiven que instalar as que indica en INSTALL.md e, a maiores, PETSc. Hai algunhas que son só para módulos específicos que en principio non imos usar, pero ó intentar instalar só o módulo PABLO (máis aqueles dos que depende) o ccmake mostraba outros erros diferentes (pode solventarse instalando `voloctree` xunto con PABLO).
 
-Tras executar o `make` os headers non están onde INSTALL.md di que deberían estar, e con `make install` igual, tampouco (a menos que estea buscando eu mal) están onde din.
+Tamén hai que configurar o CMAKE_INSTALL_PREFIX para que apunte ó directorio `build` que acabamos de crear, así tras facer `make install` si que aparecen os directorios `include/` e `lib/`.
 
-# Makefile
+# CMake
 
-No Makefile están comentadas diferentes formas que intentei eu de engadir os ficheiros para a compilación. Tal vez aí haia tamén algún erro, non traballei moito con Makefiles antes.
+Engadido `cmake/modules/FindBITPIT.cmake`. Debería funcionar, pero ó compilar con `make` dáme o erro que aparece máis abaixo.
 
-# Código
-
-As últimas liñas de `src/main.cpp` son as que teño para probar a libraría.
-
-Ó intentar compilar o proxecto sae a seguinte mensaxe de erro. Non dá erro a liña do include e o LSP si que me ofrece para autocompletar as funcións que aparecen no manual (https://optimad.github.io/bitpit/documentation/manual/1.9.0/classbitpit_1_1ParaTree.html):
+En `cmake/CMakeLibraries.cmake` hai comentada outra forma que intentei (por iso está nos módulos de CMake LibFindMacros), pero aí `BITPIT_USE_FILE` é unha variable vacía, e non sei por que.
 
 ```
-/usr/bin/ld: obj/main.o: warning: relocation against `_ZN6bitpit8ParaTree16DEFAULT_LOG_FILEB5cxx11E' in read-only section `.text.startup'
-/usr/bin/ld: obj/main.o: in function `main':
-main.cpp:(.text.startup+0x41a): undefined reference to `bitpit::ParaTree::DEFAULT_LOG_FILE[abi:cxx11]'
-/usr/bin/ld: main.cpp:(.text.startup+0x422): undefined reference to `bitpit::ParaTree::ParaTree(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)'
-/usr/bin/ld: main.cpp:(.text.startup+0x444): undefined reference to `bitpit::ParaTree::getL() const'
-/usr/bin/ld: main.cpp:(.text.startup+0x463): undefined reference to `bitpit::ParaTree::~ParaTree()'
-/usr/bin/ld: obj/main.o: in function `main.cold':
-main.cpp:(.text.unlikely+0x6b): undefined reference to `bitpit::ParaTree::~ParaTree()'
-/usr/bin/ld: warning: creating DT_TEXTREL in a PIE
+/usr/bin/ld: /tmp/ccbxl11C.ltrans0.ltrans.o: in function `main':
+<artificial>:(.text+0x65dc4): undefined reference to `bitpit::ParaTree::ParaTree(unsigned char, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)'
 collect2: error: ld returned 1 exit status
-make: *** [Makefile:83: main] Error 1
+make[2]: *** [CMakeFiles/rule-based-classifier-cpp.dir/build.make:251: rule-based-classifier-cpp] Error 1
+make[2]: Leaving directory '/home/frd/Documents/4o/TFG/octree-mpi'
+make[1]: *** [CMakeFiles/Makefile2:83: CMakeFiles/rule-based-classifier-cpp.dir/all] Error 2
+make[1]: Leaving directory '/home/frd/Documents/4o/TFG/octree-mpi'
+make: *** [Makefile:91: all] Error 2
 ```
