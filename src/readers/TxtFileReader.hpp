@@ -24,6 +24,13 @@ class TxtFileReader : public FileReader
 	 */
 	std::vector<Lpoint> read();
 
+    /**
+     * TODO: NOT IMPLEMENTED
+     * @brief Get the minimum and maximum points of the point cloud
+     * @return Pair of Point
+     */
+    [[deprecated("Not implemented yet")]] std::pair<Point, Point> getMinMax();
+
 	/**
 	 * @brief Sets the number of columns of the file to be read
 	 * @return Number of columns of the file

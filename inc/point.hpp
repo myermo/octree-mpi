@@ -6,6 +6,7 @@
 
 inline constexpr float SENSEPSILON = 0.001; // Sensible epsilon
 
+#include <array>
 #include <cassert>
 #include <cmath>
 #include <iomanip>
@@ -35,6 +36,11 @@ class Point
 
 	// 3D Geometric constructor with ID
 	Point(unsigned int id, double x, double y, double z) : id_(id), x_(x), y_(y), z_(z) {}
+
+    [[nodiscard]] static inline std::array<size_t, 4> getOffsets()
+    {
+        return { offsetof(Point, id_), offsetof(Point, x_), offsetof(Point, y_), offsetof(Point, z_) };
+    }
 
 	// Point Methods
 	/* 2D distance between two points */

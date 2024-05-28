@@ -8,7 +8,7 @@ TARGET = main
 DIST_NAME = release
 
 # Compiler
-CC = g++
+CC = mpic++
 
 ##########################
 # Commands1

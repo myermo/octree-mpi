@@ -35,5 +35,6 @@ void createDirectory(const fs::path& dirname);
 
 std::vector<Lpoint> readPointCloud(const fs::path& fileName);
 
+std::pair<Point, Point> getBoundingBox(const fs::path& filename);
 
 #endif //CPP_HANDLERS_H

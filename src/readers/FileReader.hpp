@@ -47,4 +47,5 @@ class FileReader
 	FileReader(const fs::path& path) : path(path){};
 	virtual ~FileReader(){}; // Every specialization of this class must manage its own destruction
 	virtual std::vector<Lpoint> read() = 0;
+    virtual std::pair<Point, Point> getMinMax() = 0;
 };

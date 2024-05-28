@@ -16,7 +16,8 @@ void printHelp()
 	std::cout
 	    << "-h: Show this message\n"
 	       "-i: Path to input file\n"
-	       "-o: Path to output file\n";
+	       "-o: Path to output file\n"
+           "-r: Set max radius\n";
 	exit(1);
 }
 
@@ -51,6 +52,11 @@ void processArgs(int argc, char** argv)
 				std::cout << "Output path set to: " << mainOptions.outputDirName << "\n";
 				break;
 			}
+            case 'r': {
+                mainOptions.radius = std::stof(optarg);
+                std::cout << "Radius set to: " << mainOptions.radius << "\n";
+                break;
+            }
 			case '?': // Unrecognized option
 			default:
 				printHelp();

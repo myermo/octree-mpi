@@ -52,3 +52,17 @@ std::vector<Lpoint> LasFileReader::read()
 	delete lasreader;
 	return points;
 }
+
+std::pair<Point, Point> LasFileReader::getMinMax()
+{
+    // LAS File reading
+	LASreadOpener lasreadopener;
+	lasreadopener.set_file_name(path.c_str());
+	LASreader* lasreader = lasreadopener.open();
+
+    Point min {lasreader->get_min_x(), lasreader->get_min_y(), lasreader->get_min_z()};
+    Point max {lasreader->get_max_x(), lasreader->get_max_y(), lasreader->get_max_z()};
+
+    delete lasreader;
+    return std::make_pair(min, max);
+}

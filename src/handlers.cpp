@@ -56,3 +56,28 @@ std::vector<Lpoint> readPointCloud(const fs::path& filename)
 
 	return points;
 }
+
+std::pair<Point, Point> getBoundingBox(const fs::path& filename)
+{
+    auto fExt = filename.extension();
+
+    FileReader_t readerType = chooseReaderType(fExt);
+
+    // TODO: support for txt files
+    if (readerType == err_t || readerType == txt_t)
+    {
+        std::cout << "Uncompatible file format\n";
+        exit(-1);
+    }
+
+    std::shared_ptr<FileReader> fileReader = FileReaderFactory::makeReader(readerType, filename);
+
+    auto minMax = fileReader->getMinMax();
+
+    std::cout << "Min: " << minMax.first << " Max: " << minMax.second << "\n";
+    std::cout << "X: " << minMax.second.getX() - minMax.first.getX();
+    std::cout << " Y: " << minMax.second.getY() - minMax.first.getY();
+    std::cout << " Z: " << minMax.second.getZ() - minMax.first.getZ() << "\n";
+
+    return minMax;
+}

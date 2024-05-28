@@ -25,4 +25,10 @@ class LasFileReader : public FileReader
 	 * @return Vector of Lpoint
 	 */
 	std::vector<Lpoint> read();
+
+    /**
+     * @brief Get the minimum and maximum points of the point cloud
+     * @return Pair of Point
+     */
+    std::pair<Point, Point> getMinMax();
 };
