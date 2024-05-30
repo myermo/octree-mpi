@@ -27,6 +27,8 @@ class Lpoint : public Point
 	unsigned int g_{}; // Green channel (0-65535)
 	unsigned int b_{}; // Blue channel (0-65535)
 
+    bool overlap_{}; // Overlap flag
+
 	Vector normal_{};
 
 
@@ -69,6 +71,7 @@ class Lpoint : public Point
 	// Setters and getters
 	inline double I() const { return I_; }
 	inline void   setI(double I) { I_ = I; }
+    inline void   setOverlap(bool overlap) { overlap_ = overlap; }
 
 	// TODO: delete gId references
 	inline unsigned short        getClass() const { return classification_; }
@@ -87,6 +90,7 @@ class Lpoint : public Point
 	void                         setNormal(const Vector& normal) { normal_ = normal; }
 	void                         setEigenvalues(const std::vector<double>& eigenvalues) {}
 	double                       getI() const { return I_; }
+    bool                         isOverlap() const { return overlap_; }
 
 };
 

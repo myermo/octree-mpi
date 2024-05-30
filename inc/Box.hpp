@@ -7,7 +7,9 @@
 
 #include "Lpoint.hpp"
 #include "point.hpp"
+#include "util.hpp"
 
+#include <algorithm>
 #include <vector>
 
 class Box

@@ -24,6 +24,13 @@ class TxtFileReader : public FileReader
 	 */
 	std::vector<Lpoint> read();
 
+	/**
+     * TODO: NOT IMPLEMENTED
+	 * @brief Reads the points contained in the .txt/.xyz file
+	 * @return Vector of Lpoint
+	 */
+	[[deprecated("Not implemented yet")]] std::vector<Lpoint> readOverlap(const Box& box, const Box& overlap);
+
     /**
      * TODO: NOT IMPLEMENTED
      * @brief Get the minimum and maximum points of the point cloud

@@ -12,6 +12,8 @@
 
 namespace fs = std::filesystem;
 
+/* using Pair = std::pair<Point, Point>; */
+
 // TODO: typedef std::pair<Point, Point>, maybe
 std::vector<std::pair<Point, Point>> genBoxes(const std::pair<Point, Point>& minMax, int n)
 {
@@ -30,45 +32,29 @@ std::vector<std::pair<Point, Point>> genBoxes(const std::pair<Point, Point>& min
         if (fabs(max_l - (b.second.getX() - b.first.getX())) < 0.001) { axis = 'x'; }
         else if (fabs(max_l - (b.second.getY() - b.first.getY())) < 0.001) { axis = 'y'; }
 
-        double split = max_l / 2.0;
+        // times 2 for split/3
+        bool last = i == 2 && n % 2 == 1;
+        double split = (last) ? max_l / 3.0 : max_l / 2.0;
+        int mult = (last) ? 2 : 1;
 
-        // split box
-        if (i == 2 && n % 2 == 1) {
-            // split in 3
-            split = max_l / 3.0;
-            if (axis == 'x')
-            {
-                boxes.emplace(b.first, Point(b.first.getX() + split, b.second.getY(), b.second.getZ()));
-                boxes.emplace(Point(b.first.getX() + split, b.first.getY(), b.first.getZ()), Point(b.first.getX() + 2 * split, b.second.getY(), b.second.getZ()));
-                boxes.emplace(Point(b.first.getX() + 2 * split, b.first.getY(), b.first.getZ()), b.second);
-            } else if (axis == 'y')
-            {
-                boxes.emplace(b.first, Point(b.second.getX(), b.first.getY() + split, b.second.getZ()));
-                boxes.emplace(Point(b.first.getX(), b.first.getY() + split, b.first.getZ()), Point(b.second.getX(), b.first.getY() + 2 * split, b.second.getZ()));
-                boxes.emplace(Point(b.first.getX(), b.first.getY() + 2 * split, b.first.getZ()), b.second);
-            } else if (axis == 'z')
-            {
-                boxes.emplace(b.first, Point(b.second.getX(), b.second.getY(), b.first.getZ() + split));
-                boxes.emplace(Point(b.first.getX(), b.first.getY(), b.first.getZ() + split), Point(b.second.getX(), b.second.getY(), b.first.getZ() + 2 * split));
-                boxes.emplace(Point(b.first.getX(), b.first.getY(), b.first.getZ() + 2 * split), b.second);
-            }
-            break;
-        }
-
-        // check if quicker (or tidier) option
         if (axis == 'x')
         {
             boxes.emplace(b.first, Point(b.first.getX() + split, b.second.getY(), b.second.getZ()));
-            boxes.emplace(Point(b.first.getX() + split, b.first.getY(), b.first.getZ()), b.second);
+            if (last) { boxes.emplace(Point(b.first.getX() + split, b.first.getY(), b.first.getZ()), Point(b.first.getX() + mult * split, b.second.getY(), b.second.getZ())); }
+            boxes.emplace(Point(b.first.getX() + mult * split, b.first.getY(), b.first.getZ()), b.second);
         } else if (axis == 'y')
         {
             boxes.emplace(b.first, Point(b.second.getX(), b.first.getY() + split, b.second.getZ()));
-            boxes.emplace(Point(b.first.getX(), b.first.getY() + split, b.first.getZ()), b.second);
-        } else if (axis == 'z')
+            if (last) { boxes.emplace(Point(b.first.getX(), b.first.getY() + split, b.first.getZ()), Point(b.second.getX(), b.first.getY() + mult * split, b.second.getZ())); }
+            boxes.emplace(Point(b.first.getX(), b.first.getY() + mult * split, b.first.getZ()), b.second);
+        } else
         {
             boxes.emplace(b.first, Point(b.second.getX(), b.second.getY(), b.first.getZ() + split));
-            boxes.emplace(Point(b.first.getX(), b.first.getY(), b.first.getZ() + split), b.second);
+            if (last) { boxes.emplace(Point(b.first.getX(), b.first.getY(), b.first.getZ() + split), Point(b.second.getX(), b.second.getY(), b.first.getZ() + mult * split)); }
+            boxes.emplace(Point(b.first.getX(), b.first.getY(), b.first.getZ() + mult * split), b.second);
         }
+
+        if (last) { break; }
     }
 
     // convert to vector (contiguous in memory, needed for scatter)
@@ -123,34 +109,63 @@ int main(int argc, char* argv[])
     MPI_Comm_size(MPI_COMM_WORLD, &npes);
     MPI_Comm_rank(MPI_COMM_WORLD, &node);
 
+    // Boxes generation
     std::vector<std::pair<Point, Point>> boxes;
     if (node == 0)
     {
-        std::cout << "npes: " << npes << "\n";
-
         boxes = genBoxes(getBoundingBox(mainOptions.inputFile), npes);
-        std::cout << "Bounding boxes:\n";
-        for (auto b : boxes) {
-            std::cout << "Min: " << b.first << " Max: " << b.second << "\n";
-        }
     }
 
     std::pair<Point, Point> minMax;
     MPI_Datatype pointType = createPointType();
     MPI_Scatter(boxes.data(), 2, pointType, &minMax, 2, pointType, 0, MPI_COMM_WORLD);
-    std::cout << "Node " << node << " min: " << minMax.first << " max: " << minMax.second << "\n";
 
-    // TODO: read points, octree construction
+    Point radius(mainOptions.radius, mainOptions.radius, mainOptions.radius);
+    Box b(minMax);
+    Box overlap(std::pair<Point, Point>{ minMax.first - radius, minMax.second + radius });
 
+    // Read point cloud
+    TimeWatcher tw;
+    tw.start();
+    std::vector<Lpoint> l_points = readPointCloudOverlap(mainOptions.inputFile, b, overlap);
+    tw.stop();
+    unsigned int numOvl = 0;
+    for (const Lpoint& p : l_points) {
+        if (p.isOverlap()) { numOvl++; }
+    }
+
+    std::cout << "Node " << node << " Number of read points: " << l_points.size() << "\n"
+        << "    Number of overlapping points: " << numOvl << "\n"
+        << "    Number of unique points: " << l_points.size() - numOvl << "\n"
+        << "    Time to read points: " << tw.getElapsedDecimalSeconds() << " seconds\n\n";
+
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    // Local Octree Creation
+    tw.start();
+    Octree lOctree(l_points);
+    tw.stop();
+    std::cout << "Node " << node << " Time to build local octree: " << tw.getElapsedDecimalSeconds() << " seconds\n";
+
+    unsigned totalPoints, totalOvl;
+    unsigned localPoints = l_points.size();
+    MPI_Reduce(&localPoints, &totalPoints, 1, MPI_UNSIGNED, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&numOvl, &totalOvl, 1, MPI_UNSIGNED, MPI_SUM, 0, MPI_COMM_WORLD);
+
+    // Sequential
     if (node == 0)
     {
-        TimeWatcher tw;
+        std::cout << "\nTotal number of read points: " << totalPoints << "\n"
+            << "Total number of overlapping points: " << totalOvl << "\n"
+            << "Total number of unique points: " << totalPoints - totalOvl << "\n";
+
+        std::cout << "\n-------------------------------------------------\n\n";
 
         tw.start();
         std::vector<Lpoint> points = readPointCloud(mainOptions.inputFile);
         tw.stop();
         std::cout << "Number of read points: " << points.size() << "\n";
-        std::cout << "Time to read points: " << tw.getElapsedDecimalSeconds() << " seconds\n";
+        std::cout << " Time to read points: " << tw.getElapsedDecimalSeconds() << " seconds\n";
 
         // Global Octree Creation
         std::cout << "Building global octree..." << "\n";

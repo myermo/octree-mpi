@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "Box.hpp"
 #include "FileReader.hpp"
 #include "Lpoint.hpp"
 #include <lasreader.hpp>
@@ -25,6 +26,12 @@ class LasFileReader : public FileReader
 	 * @return Vector of Lpoint
 	 */
 	std::vector<Lpoint> read();
+
+    /**
+     * @brief Reads the points contained in the .las/.laz file that are inside the box and overlap
+     * @return Vector of Lpoint
+     */
+    std::vector<Lpoint> readOverlap(const Box& box, const Box& overlap);
 
     /**
      * @brief Get the minimum and maximum points of the point cloud

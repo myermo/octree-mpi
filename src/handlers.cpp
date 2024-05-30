@@ -11,6 +11,8 @@
 #include <lasreader.hpp>
 #include <random>
 
+#include "Box.hpp"
+
 void createDirectory(const fs::path& dirName)
 /**
  * This function creates a directory if it does not exist.
@@ -32,6 +34,25 @@ void writePoints(fs::path& filename, std::vector<Lpoint>& points)
 	}
 
 	f.close();
+}
+
+std::vector<Lpoint> readPointCloudOverlap(const fs::path& filename, const Box& box, const Box& overlap)
+{
+    auto fExt = filename.extension();
+
+    FileReader_t readerType = chooseReaderType(fExt);
+
+    if (readerType == err_t || readerType == txt_t)
+    {
+        std::cout << "Uncompatible file format\n";
+        exit(-1);
+    }
+
+    std::shared_ptr<FileReader> fileReader = FileReaderFactory::makeReader(readerType, filename);
+
+    std::vector<Lpoint> points = fileReader->readOverlap(box, overlap);
+
+    return points;
 }
 
 std::vector<Lpoint> readPointCloud(const fs::path& filename)

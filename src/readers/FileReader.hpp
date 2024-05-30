@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include "Box.hpp"
 #include "Lpoint.hpp"
 
 #include <filesystem>
@@ -47,5 +48,6 @@ class FileReader
 	FileReader(const fs::path& path) : path(path){};
 	virtual ~FileReader(){}; // Every specialization of this class must manage its own destruction
 	virtual std::vector<Lpoint> read() = 0;
+    virtual std::vector<Lpoint> readOverlap(const Box& box, const Box& overlap) = 0;
     virtual std::pair<Point, Point> getMinMax() = 0;
 };

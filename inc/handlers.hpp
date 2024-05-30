@@ -21,6 +21,7 @@
 #include "main_options.hpp"
 #include "point.hpp"
 #include "Lpoint.hpp"
+#include "Box.hpp"
 #include <filesystem> // File extensions
 #include <string>
 #include <vector>
@@ -32,6 +33,8 @@ void handleNumberOfPoints(std::vector<Lpoint>& points);
 unsigned int getNumberOfCols(const fs::path& filePath);
 
 void createDirectory(const fs::path& dirname);
+
+std::vector<Lpoint> readPointCloudOverlap(const fs::path& fileName, const Box& box, const Box& overlap);
 
 std::vector<Lpoint> readPointCloud(const fs::path& fileName);
 
