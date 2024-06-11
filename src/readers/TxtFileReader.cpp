@@ -29,6 +29,14 @@ void TxtFileReader::setNumberOfColumns(std::ifstream& file)
 		numCols++;
 }
 
+std::vector<Lpoint> TxtFileReader::readOverlap(const Box& box, const Box& overlap)
+{
+}
+
+std::pair<Point, Point> TxtFileReader::getMinMax()
+{
+}
+
 std::vector<Lpoint> TxtFileReader::read()
 {
 	std::ifstream file(path.string());

@@ -15,11 +15,18 @@ namespace fs = std::filesystem;
 /* using Pair = std::pair<Point, Point>; */
 
 // TODO: typedef std::pair<Point, Point>, maybe
+// move to handles.cpp, maybe
 std::vector<std::pair<Point, Point>> genBoxes(const std::pair<Point, Point>& minMax, int n)
 {
+    const double epsilon = 0.000000001;
     // FIFO (biggest is always first)
     std::queue<std::pair<Point, Point>> boxes;
-    boxes.emplace(minMax);
+    // better solution to this would be not using epsilon and instead passing to
+    // isInside() some kind of option telling if that specific box shares sides with
+    // the min of the main box or not, and if it does do a <=
+    // and do a >= to everyone
+    // TODO: do this^, as current implementation is flawed
+    boxes.emplace(minMax.first - (epsilon, epsilon, epsilon), minMax.second);
 
     for (int i = n - 1; i > 0; i--)
     {
@@ -29,8 +36,8 @@ std::vector<std::pair<Point, Point>> genBoxes(const std::pair<Point, Point>& min
         // get max length and find max axis
         double max_l = std::max({ b.second.getX() - b.first.getX(), b.second.getY() - b.first.getY(), b.second.getZ() - b.first.getZ() });
         char axis = 'z';
-        if (fabs(max_l - (b.second.getX() - b.first.getX())) < 0.001) { axis = 'x'; }
-        else if (fabs(max_l - (b.second.getY() - b.first.getY())) < 0.001) { axis = 'y'; }
+        if (fabs(max_l - (b.second.getX() - b.first.getX())) < epsilon) { axis = 'x'; }
+        else if (fabs(max_l - (b.second.getY() - b.first.getY())) < epsilon) { axis = 'y'; }
 
         // times 2 for split/3
         bool last = i == 2 && n % 2 == 1;
@@ -61,7 +68,7 @@ std::vector<std::pair<Point, Point>> genBoxes(const std::pair<Point, Point>& min
     std::vector<std::pair<Point, Point>> ret;
     while (!boxes.empty())
     {
-        ret.push_back(boxes.front());
+        ret.emplace_back(boxes.front().first, boxes.front().second + (epsilon, epsilon, epsilon));
         boxes.pop();
     }
 
@@ -104,6 +111,7 @@ int main(int argc, char* argv[])
 	std::cout << std::fixed;
 	std::cout << std::setprecision(3);
 
+    // MPI init
     int node = 0, npes = 1;
     MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &npes);
@@ -129,6 +137,7 @@ int main(int argc, char* argv[])
     tw.start();
     std::vector<Lpoint> l_points = readPointCloudOverlap(mainOptions.inputFile, b, overlap);
     tw.stop();
+
     unsigned int numOvl = 0;
     for (const Lpoint& p : l_points) {
         if (p.isOverlap()) { numOvl++; }
@@ -137,7 +146,8 @@ int main(int argc, char* argv[])
     std::cout << "Node " << node << " Number of read points: " << l_points.size() << "\n"
         << "    Number of overlapping points: " << numOvl << "\n"
         << "    Number of unique points: " << l_points.size() - numOvl << "\n"
-        << "    Time to read points: " << tw.getElapsedDecimalSeconds() << " seconds\n\n";
+        << "    Time to read points: " << tw.getElapsedDecimalSeconds() << " seconds\n"
+        << "    Box dimensions: " << minMax.first << ", " << minMax.second << "\n\n";
 
     MPI_Barrier(MPI_COMM_WORLD);
 
@@ -152,9 +162,31 @@ int main(int argc, char* argv[])
     MPI_Reduce(&localPoints, &totalPoints, 1, MPI_UNSIGNED, MPI_SUM, 0, MPI_COMM_WORLD);
     MPI_Reduce(&numOvl, &totalOvl, 1, MPI_UNSIGNED, MPI_SUM, 0, MPI_COMM_WORLD);
 
+    tw.start();
+    double localNeigh = 0;
+    for (const Lpoint& p : l_points)
+    {
+        if (p.isOverlap()) { continue; }
+        localNeigh += lOctree.searchNeighbors3D(p, mainOptions.radius).size();
+    }
+    tw.stop();
+
+    std::cout << "Node " << node << " Density for radius " << mainOptions.radius << ": " << localNeigh / (l_points.size() - numOvl) << "\n"
+        << "    Time to calculate density: " << tw.getElapsedDecimalSeconds() << " seconds\n";
+
+    double totNeigh = 0;
+    MPI_Reduce(&localNeigh, &totNeigh, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    if (node == 0)
+    {
+        std::cout << "Density for radius " << mainOptions.radius << ": " << totNeigh / (totalPoints - totalOvl) << "\n";
+    }
+
     // Sequential
     if (node == 0)
     {
+        // sort globalIds
+        /* std::sort(globalIds.begin(), globalIds.end()); */
+
         std::cout << "\nTotal number of read points: " << totalPoints << "\n"
             << "Total number of overlapping points: " << totalOvl << "\n"
             << "Total number of unique points: " << totalPoints - totalOvl << "\n";
@@ -165,14 +197,25 @@ int main(int argc, char* argv[])
         std::vector<Lpoint> points = readPointCloud(mainOptions.inputFile);
         tw.stop();
         std::cout << "Number of read points: " << points.size() << "\n";
-        std::cout << " Time to read points: " << tw.getElapsedDecimalSeconds() << " seconds\n";
+        std::cout << "    Time to read points: " << tw.getElapsedDecimalSeconds() << " seconds\n";
 
         // Global Octree Creation
         std::cout << "Building global octree..." << "\n";
         tw.start();
         Octree gOctree(points);
         tw.stop();
-        std::cout << "Time to build global octree: " << tw.getElapsedDecimalSeconds() << " seconds\n";
+        std::cout << "    Time to build global octree: " << tw.getElapsedDecimalSeconds() << " seconds\n";
+
+        // Density
+        tw.start();
+        unsigned long totNeigh = 0;
+        for (const Lpoint& p : points)
+        {
+            totNeigh += gOctree.searchNeighbors3D(p, mainOptions.radius).size();
+        }
+        tw.stop();
+        std::cout << "Density for radius " << mainOptions.radius << ": " << static_cast<double>(totNeigh) / points.size() << "\n"
+            << "    Time to calculate density: " << tw.getElapsedDecimalSeconds() << " seconds\n";
     }
 
     MPI_Finalize();
