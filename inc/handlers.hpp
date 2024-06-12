@@ -23,10 +23,13 @@
 #include "Lpoint.hpp"
 #include "Box.hpp"
 #include <filesystem> // File extensions
+#include <mpi.h>
 #include <string>
 #include <vector>
 
 namespace fs = std::filesystem;
+
+using PointPair = std::pair<Point, Point>;
 
 void handleNumberOfPoints(std::vector<Lpoint>& points);
 
@@ -38,6 +41,10 @@ std::vector<Lpoint> readPointCloudOverlap(const fs::path& fileName, const Box& b
 
 std::vector<Lpoint> readPointCloud(const fs::path& fileName);
 
-std::pair<Point, Point> getBoundingBox(const fs::path& filename);
+PointPair getBoundingBox(const fs::path& filename);
+
+std::vector<PointPair> genBoxes(const PointPair& minMax, int n);
+
+MPI_Datatype createPointType();
 
 #endif //CPP_HANDLERS_H
