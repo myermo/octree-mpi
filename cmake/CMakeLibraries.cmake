@@ -16,6 +16,14 @@ else ()
     message(SEND_ERROR "Could not find OpenMP")
 endif ()
 
+# MPI
+find_package(MPI REQUIRED)
+if (MPI_CXX_FOUND)
+    message(STATUS "MPI found and to be linked")
+else ()
+    message(SEND_ERROR "Could not find MPI")
+endif ()
+
 # Armadillo
 find_package(Armadillo REQUIRED)
 if (TARGET armadillo::armadillo)
