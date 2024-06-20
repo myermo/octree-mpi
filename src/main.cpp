@@ -187,7 +187,6 @@ int main(int argc, char* argv[])
     std::string str;
     #pragma omp parallel reduction(+:localNeigh) private(count, str)
     {
-        //#pragma omp parallel for reduction(+:localNeigh) private(count, str)
         #pragma omp for
         for (const Lpoint& p : lPoints)
         {
@@ -231,7 +230,7 @@ int main(int argc, char* argv[])
     {
         std::cout << "Density for radius " << mainOptions.radius << ": " << totNeigh / (totalPoints - totalOvl) << "\n"
             << "    Mean time to calculate features: " << meanTime / npes << " seconds\n";
-        deb_str += std::to_string(totNeigh / (totalPoints - totalOvl)) + "\n";
+        deb_str += std::to_string(meanTime / npes) + "\n";
         std::fstream deb(mainOptions.debugFile, std::fstream::app);
         deb << deb_str;
         deb.close();
