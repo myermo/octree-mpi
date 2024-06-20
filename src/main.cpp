@@ -118,9 +118,12 @@ int main(int argc, char* argv[])
 
     // Boxes generation
     std::vector<PointPair> boxes;
+    std::string deb_str;
     if (node == 0)
     {
         boxes = genBoxes(getBoundingBox(mainOptions.inputFile), npes);
+        deb_str = std::to_string(npes) + ", " + std::to_string(omp_get_max_threads()) + ", " 
+            + mainOptions.inputFile.filename().c_str() + ", " + std::to_string(mainOptions.radius) + ", ";
     }
 
     PointPair minMax;
@@ -136,6 +139,10 @@ int main(int argc, char* argv[])
     tw.start();
     std::vector<Lpoint> lPoints = readPointCloudOverlap(mainOptions.inputFile, b, overlap);
     tw.stop();
+    double localTime = tw.getElapsedDecimalSeconds();
+    double meanTime = 0;
+    MPI_Reduce(&localTime, &meanTime, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    if (node == 0) { deb_str += std::to_string(meanTime / npes) + ", "; }
 
     unsigned int numOvl = 0;
     for (const Lpoint& p : lPoints) {
@@ -145,7 +152,7 @@ int main(int argc, char* argv[])
     std::cout << "Node " << node << " Number of read points: " << lPoints.size() << "\n"
         << "    Number of overlapping points: " << numOvl << "\n"
         << "    Number of unique points: " << lPoints.size() - numOvl << "\n"
-        << "    Time to read points: " << tw.getElapsedDecimalSeconds() << " seconds\n"
+        << "    Time to read points: " << localTime << " seconds\n"
         << "    Box dimensions: " << minMax.first << ", " << minMax.second << "\n\n";
 
     MPI_Barrier(MPI_COMM_WORLD);
@@ -154,7 +161,10 @@ int main(int argc, char* argv[])
     tw.start();
     Octree lOctree(lPoints);
     tw.stop();
-    std::cout << "Node " << node << " Time to build local octree: " << tw.getElapsedDecimalSeconds() << " seconds\n";
+    localTime = tw.getElapsedDecimalSeconds();
+    std::cout << "Node " << node << " Time to build local octree: " << localTime << " seconds\n";
+    MPI_Reduce(&localTime, &meanTime, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    if (node == 0) { deb_str += std::to_string(meanTime / npes) + ", "; }
 
     unsigned totalPoints, totalOvl;
     unsigned localPoints = lPoints.size();
@@ -210,18 +220,21 @@ int main(int argc, char* argv[])
 
     MPI_File_close(&file);
 
-    double localTime = tw.getElapsedDecimalSeconds();
+    localTime = tw.getElapsedDecimalSeconds();
     std::cout << "Node " << node << " Density for radius " << mainOptions.radius << ": " << localNeigh / (lPoints.size() - numOvl) << "\n"
-        << "    Time to calculate density: " << localTime << " seconds\n\n";
+        << "    Time to calculate features: " << localTime << " seconds\n\n";
 
     double totNeigh = 0;
     MPI_Reduce(&localNeigh, &totNeigh, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-    double totTime = 0;
-    MPI_Reduce(&localTime, &totTime, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&localTime, &meanTime, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
     if (node == 0)
     {
         std::cout << "Density for radius " << mainOptions.radius << ": " << totNeigh / (totalPoints - totalOvl) << "\n"
-            << "    Mean time to calculate density: " << totTime / npes << " seconds\n";
+            << "    Mean time to calculate features: " << meanTime / npes << " seconds\n";
+        deb_str += std::to_string(totNeigh / (totalPoints - totalOvl)) + "\n";
+        std::fstream deb(mainOptions.debugFile, std::fstream::app);
+        deb << deb_str;
+        deb.close();
     }
 
     // Sequential
@@ -262,7 +275,7 @@ int main(int argc, char* argv[])
         }
         tw.stop();
         std::cout << "Density for radius " << mainOptions.radius << ": " << static_cast<double>(totNeigh) / points.size() << "\n"
-            << "    Time to calculate density: " << tw.getElapsedDecimalSeconds() << " seconds\n";
+            << "    Time to calculate features: " << tw.getElapsedDecimalSeconds() << " seconds\n";
     }
 
     MPI_Finalize();

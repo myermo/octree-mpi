@@ -17,13 +17,15 @@ void printHelp()
 	    << "-h: Show this message\n"
 	       "-i: Path to input file\n"
 	       "-o: Path to output file\n"
-           "-r: Set max radius\n";
+           "-r: Set max radius\n"
+           "-d: Path to debug file\n";
 	exit(1);
 }
 
 void setDefaults()
 {
 	if (mainOptions.outputDirName.empty()) { mainOptions.outputDirName = "out"; }
+    if (mainOptions.debugFile.empty()) { mainOptions.debugFile = "debug.txt"; }
 }
 
 
@@ -55,6 +57,11 @@ void processArgs(int argc, char** argv)
             case 'r': {
                 mainOptions.radius = std::stof(optarg);
                 std::cout << "Radius set to: " << mainOptions.radius << "\n";
+                break;
+            }
+            case 'd': {
+                mainOptions.debugFile = fs::path(std::string(optarg));
+                std::cout << "Debug file set to: " << mainOptions.debugFile << "\n";
                 break;
             }
 			case '?': // Unrecognized option
