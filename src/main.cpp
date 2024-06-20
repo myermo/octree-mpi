@@ -173,24 +173,38 @@ int main(int argc, char* argv[])
 
     tw.start();
     double localNeigh = 0;
-    #pragma omp parallel for reduction(+:localNeigh)
-    for (const Lpoint& p : lPoints)
+    int count = 0;
+    std::string str;
+    #pragma omp parallel reduction(+:localNeigh) private(count, str)
     {
-        if (p.isOverlap()) { continue; }
-        auto neigh = lOctree.searchNeighbors3D(p, mainOptions.radius);
-        if (neigh.size() == 0) { continue; }
+        //#pragma omp parallel for reduction(+:localNeigh) private(count, str)
+        #pragma omp for
+        for (const Lpoint& p : lPoints)
+        {
+            if (p.isOverlap()) { continue; }
+            auto neigh = lOctree.searchNeighbors3D(p, mainOptions.radius);
+            if (neigh.size() == 0) { continue; }
 
-        auto feats = features(neigh, p);
+            auto feats = features(neigh, p);
 
-        localNeigh += neigh.size();
+            localNeigh += neigh.size();
 
-        // print coordinates and other info to file "out.txt"
-        std::string str = std::to_string(p.getX()) + " " + std::to_string(p.getY()) + " " + std::to_string(p.getZ()) + " " + std::to_string(node);
-        for (double f : feats) { str += " " + std::to_string(f); }
-        str += "\n";
+            // print coordinates and other info to file "out.txt"
+            str += std::to_string(p.getX()) + " " + std::to_string(p.getY()) + " " + std::to_string(p.getZ()) + " " + std::to_string(node);
+            for (double f : feats) { str += " " + std::to_string(f); }
+            str += "\n";
+            count++;
 
+            if (count == 500) {
+                #pragma omp critical
+                MPI_File_write_shared(file, str.c_str(), str.size(), MPI_CHAR, MPI_STATUS_IGNORE);
+                str.clear();
+                count = 0;
+            }
+        }
         #pragma omp critical
         MPI_File_write_shared(file, str.c_str(), str.size(), MPI_CHAR, MPI_STATUS_IGNORE);
+        str.clear();
     }
     tw.stop();
 
